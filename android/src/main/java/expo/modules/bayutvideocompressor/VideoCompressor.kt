@@ -25,7 +25,7 @@ class VideoCompressor(private val context: Context) {
 
     data class CompressConfig(
         val videoMaxDimensionLongEdge: Int = 0,
-        val videoMaxDimensionShort: Int = 0,
+        val videoMaxDimensionShortEdge: Int = 0,
         val videoBitrateTarget: Int = 0,
         val speed: String = "ultrafast",
         val videoEncodingMode: String = "vbr",
@@ -559,10 +559,14 @@ class VideoCompressor(private val context: Context) {
         val h = if (rotation == 90 || rotation == 270) srcW else srcH
 
         if (videoMaxDimensionLongEdge <= 0 && videoMaxDimensionShortEdge <= 0)
-            return Pair((w, h))
+            return Pair(w, h)
 
-        val scale = if (h > w) Math.min((videoMaxDimensionLongEdge.toFloat() / h), (videoMaxDimensionShortEdge.toFloat() / w)).coerceAtMost(1f)
-                    else Math.min((videoMaxDimensionLongEdge.toFloat() / w), (videoMaxDimensionShortEdge.toFloat() / h)).coerceAtMost(1f)
+        // A limit <= 0 means "unset". Long edge caps max(w, h), short edge caps min(w, h).
+        val srcLong = maxOf(w, h).toFloat()
+        val srcShort = minOf(w, h).toFloat()
+        var scale = 1f
+        if (videoMaxDimensionLongEdge > 0) scale = minOf(scale, videoMaxDimensionLongEdge / srcLong)
+        if (videoMaxDimensionShortEdge > 0) scale = minOf(scale, videoMaxDimensionShortEdge / srcShort)
         return Pair((Math.round(w * scale / 2f) * 2), (Math.round(h * scale / 2f) * 2))
     }
 
