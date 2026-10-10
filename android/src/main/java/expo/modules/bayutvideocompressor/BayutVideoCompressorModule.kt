@@ -33,6 +33,9 @@ class BayutVideoCompressorModule : Module() {
                     bitrate = (options["bitrate"] as? Number)?.toInt() ?: 0,
                     codec = options["codec"] as? String ?: "h264",
                     speed = options["speed"] as? String ?: "ultrafast",
+                    keyframeInterval = (options["keyframeInterval"] as? Number)?.toFloat() ?: 0f,
+                    bitrateMode = options["bitrateMode"] as? String ?: "vbr",
+                    bitrateMax = (options["bitrateMax"] as? Number)?.toInt() ?: 0,
                 )
 
                 val minimumFileSize = (options["minimumFileSizeForCompress"] as? Number)?.toDouble() ?: 0.0

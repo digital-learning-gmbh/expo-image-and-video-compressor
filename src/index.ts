@@ -39,6 +39,7 @@ export async function compress(
             maxSize: 1080,
             codec: 'h264',
             speed: 'ultrafast',
+            bitrateMode: 'vbr',
             minimumFileSizeForCompress: 0,
             progressDivider: 0,
             ...options,

@@ -19,15 +19,55 @@ export type CompressionCodec = 'h264' | 'hevc';
 export type CompressionSpeed = 'ultrafast' | 'fast' | 'balanced';
 
 /**
+ * Rate control mode.
+ * - 'vbr': Variable bitrate. `bitrate` is a target average; the encoder floats with content complexity.
+ * - 'cbr': Constant bitrate. Android requests BITRATE_MODE_CBR (falls back to VBR if the encoder
+ *   lacks support). iOS has no guaranteed CBR through AVAssetWriter, so it uses the average bitrate
+ *   plus a tight 1-second data-rate cap as the closest approximation.
+ */
+export type BitrateMode = 'vbr' | 'cbr';
+
+/**
  * Options for video compression.
  */
-export interface CompressOptions {
+export type CompressOptions = CompressOptionsBase &
+  (
+    | {
+        /**
+         * Rate control mode.
+         * Default: 'vbr'
+         */
+        bitrateMode?: 'vbr';
+
+        /**
+         * Peak bitrate cap in bits per second. VBR only.
+         * - iOS: applied via `kVTCompressionPropertyKey_DataRateLimits` (1-second window); enforced.
+         * - Android: passed as the `max-bitrate` MediaFormat key; only honored by some encoders.
+         * Default: no cap.
+         * Example: 2_500_000 for 2.5 Mbps
+         */
+        bitrateMax?: number;
+      }
+    | {
+        bitrateMode: 'cbr';
+        bitrateMax?: never;
+      }
+  );
+
+export interface CompressOptionsBase {
   /**
    * Target bitrate in bits per second.
    * Default: auto-calculated based on resolution.
    * Example: 2_500_000 for 2.5 Mbps
    */
   bitrate?: number;
+
+  /**
+   * Maximum keyframe (I-frame) interval in seconds.
+   * Shorter = faster seeking and error recovery, larger files; longer = better compression.
+   * Default: 1 on Android, encoder default on iOS.
+   */
+  keyframeInterval?: number;
 
   /**
    * Maximum output dimension (width or height).

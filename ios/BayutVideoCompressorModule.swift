@@ -25,6 +25,9 @@ public class BayutVideoCompressorModule: Module {
       let bitrate = options["bitrate"] as? Int ?? 0
       let codec = options["codec"] as? String ?? "h264"
       let speed = options["speed"] as? String ?? "ultrafast"
+      let keyframeInterval = (options["keyframeInterval"] as? NSNumber)?.doubleValue ?? 0
+      let bitrateMode = options["bitrateMode"] as? String ?? "vbr"
+      let bitrateMax = options["bitrateMax"] as? Int ?? 0
       let minimumFileSize = options["minimumFileSizeForCompress"] as? Double ?? 0
       let progressDivider = options["progressDivider"] as? Int ?? 0
 
@@ -83,6 +86,8 @@ public class BayutVideoCompressorModule: Module {
         outputBitrate: outputBitrate,
         codec: codec,
         speed: speed,
+        bitrateMode: bitrateMode,
+        bitrateMax: bitrateMax,
         uuid: uuid,
         progressDivider: progressDivider
       )
@@ -234,6 +239,8 @@ public class BayutVideoCompressorModule: Module {
     outputBitrate: Int,
     codec: String,
     speed: String,
+    bitrateMode: String,
+    bitrateMax: Int,
     uuid: String,
     progressDivider: Int
   ) async throws {
@@ -256,6 +263,19 @@ public class BayutVideoCompressorModule: Module {
       AVVideoAverageBitRateKey: outputBitrate,
       AVVideoProfileLevelKey: profileLevel,
     ]
+
+    if keyframeInterval > 0 {
+      compressionProps[AVVideoMaxkeyframeIntervalDurationKey] = keyframeInterval
+    }
+
+    // Rate control. AVAssetWriter has no true CBR switch, so CBR is approximated by
+    // capping the data rate at the target over a 1-second window. VBR may take an
+    // optional peak cap (bitrateMax).
+    let rateCap = bitrateMode == "cbr" ? outputBitrate : (bitrateMax > 0 ? max(bitrateMax, outputBitrate) : 0)
+    if rateCap > 0 {
+      // [bytes, seconds]
+      compressionProps[kVTCompressionPropertyKey_DataRateLimits as String] = [rateCap / 8, 1]
+    }
 
     // Speed optimizations
     if speed == "ultrafast" {
@@ -462,9 +482,9 @@ public class BayutVideoCompressorModule: Module {
 
     let baseBitrate = Float(pixels) * 1.5
     let targetBitrate = Int(baseBitrate * compressFactor)
-    let maxBitrate = 5_000_000
+    let bitrateMax = 5_000_000
 
-    return min(max(targetBitrate, 500_000), min(sourceBitrate, maxBitrate))
+    return min(max(targetBitrate, 500_000), min(sourceBitrate, bitrateMax))
   }
 
   private func createTempURL() -> URL {

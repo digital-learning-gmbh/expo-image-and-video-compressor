@@ -27,6 +27,9 @@ class VideoCompressor(private val context: Context) {
         val bitrate: Int = 0,
         val codec: String = "h264",
         val speed: String = "ultrafast",
+        val keyframeInterval: Float = 0f,
+        val bitrateMode: String = "vbr",
+        val bitrateMax: Int = 0,
     )
 
     interface ProgressListener {
@@ -87,8 +90,14 @@ class VideoCompressor(private val context: Context) {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, outputBitrate)
             setInteger(MediaFormat.KEY_FRAME_RATE, 30)
-            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL)
-            setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR)
+            if (config.keyframeInterval > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, config.keyframeInterval)
+            } else {
+                setInteger(
+                    MediaFormat.KEY_I_FRAME_INTERVAL,
+                    if (config.keyframeInterval > 0f) Math.round(config.keyframeInterval).coerceAtLeast(1) else I_FRAME_INTERVAL
+                )
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 setInteger(MediaFormat.KEY_PRIORITY, 0)  // Realtime priority
                 setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE.toInt())  // Max speed
@@ -97,6 +106,22 @@ class VideoCompressor(private val context: Context) {
 
         val encoder = findHardwareEncoder(mimeType, outputFormat)
         Log.i(TAG, "Using encoder: ${encoder.name} (${if (isHardwareEncoder(encoder.name)) "HARDWARE" else "SOFTWARE"})")
+
+        val encoderCaps = encoder.codecInfo.getCapabilitiesForType(mimeType).encoderCapabilities
+        val wantCbr = config.bitrateMode == "cbr" &&
+            encoderCaps.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR)
+        if (config.bitrateMode == "cbr" && !wantCbr) {
+            Log.w(TAG, "CBR not supported by ${encoder.name}, falling back to VBR")
+        }
+        outputFormat.setInteger(
+            MediaFormat.KEY_BITRATE_MODE,
+            if (wantCbr) MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
+            else MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR
+        )
+        // Peak cap is VBR-only and vendor-dependent; unsupported encoders ignore the key.
+        if (!wantCbr && config.bitrateMax > 0) {
+            outputFormat.setInteger("max-bitrate", maxOf(config.bitrateMax, outputBitrate))
+        }
         encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         val encoderInputSurface = encoder.createInputSurface()
         encoder.start()
