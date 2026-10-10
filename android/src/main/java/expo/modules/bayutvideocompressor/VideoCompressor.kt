@@ -32,6 +32,7 @@ class VideoCompressor(private val context: Context) {
         val audioCodec: String? = null,
         val audioBitrate: Int = 0,
         val bitrateMode: String = "vbr",
+        val quality: Float = 0.5f,
         val bitrateMax: Int = 0,
     )
 
@@ -138,18 +139,24 @@ class VideoCompressor(private val context: Context) {
         Log.i(TAG, "Using encoder: ${encoder.name} (${if (isHardwareEncoder(encoder.name)) "HARDWARE" else "SOFTWARE"})")
 
         val encoderCaps = encoder.codecInfo.getCapabilitiesForType(mimeType).encoderCapabilities
-        val wantCbr = config.bitrateMode == "cbr" &&
-            encoderCaps.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR)
-        if (config.bitrateMode == "cbr" && !wantCbr) {
-            Log.w(TAG, "CBR not supported by ${encoder.name}, falling back to VBR")
+        fun supports(mode: Int) = encoderCaps.isBitrateModeSupported(mode)
+        val mode = when {
+            config.bitrateMode == "cbr" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) ->
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
+            config.bitrateMode == "cq" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ) ->
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ
+            else -> MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR
         }
-        outputFormat.setInteger(
-            MediaFormat.KEY_BITRATE_MODE,
-            if (wantCbr) MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
-            else MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR
-        )
-        // Peak cap is VBR-only and vendor-dependent; unsupported encoders ignore the key.
-        if (!wantCbr && config.bitrateMax > 0) {
+        if (config.bitrateMode != "vbr" && mode == MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR) {
+            Log.w(TAG, "${config.bitrateMode.uppercase()} not supported by ${encoder.name}, falling back to VBR")
+        }
+        outputFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, mode)
+        if (mode == MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ) {
+            // "quality" is a 0-100 scale for CQ mode on most encoders (KEY_QUALITY, API 28+)
+            outputFormat.setInteger("quality", (config.quality.coerceIn(0f, 1f) * 100).toInt())
+        }
+        // Peak cap is vendor-dependent; unsupported encoders ignore the key.
+        if (mode != MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR && config.bitrateMax > 0) {
             outputFormat.setInteger("max-bitrate", maxOf(config.bitrateMax, outputBitrate))
         }
         encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)

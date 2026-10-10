@@ -29,6 +29,7 @@ public class BayutVideoCompressorModule: Module {
       let audioCodec = options["audioCodec"] as? String
       let audioBitrate = options["audioBitrate"] as? Int ?? 0
       let bitrateMode = options["bitrateMode"] as? String ?? "vbr"
+      let quality = (options["quality"] as? NSNumber)?.doubleValue ?? 0.5
       let bitrateMax = options["bitrateMax"] as? Int ?? 0
       let minimumFileSize = options["minimumFileSizeForCompress"] as? Double ?? 0
       let progressDivider = options["progressDivider"] as? Int ?? 0
@@ -89,6 +90,7 @@ public class BayutVideoCompressorModule: Module {
         codec: codec,
         speed: speed,
         bitrateMode: bitrateMode,
+        quality: quality,
         bitrateMax: bitrateMax,
         uuid: uuid,
         progressDivider: progressDivider
@@ -242,6 +244,7 @@ public class BayutVideoCompressorModule: Module {
     codec: String,
     speed: String,
     bitrateMode: String,
+    quality: Double,
     bitrateMax: Int,
     uuid: String,
     progressDivider: Int
@@ -266,14 +269,23 @@ public class BayutVideoCompressorModule: Module {
       AVVideoProfileLevelKey: profileLevel,
     ]
 
+    // Constant quality: VideoToolbox picks the bitrate for the requested quality, so the
+    // average-bitrate key is dropped (bitrateMax can still cap peaks below).
+    if bitrateMode == "cq" {
+      compressionProps.removeValue(forKey: AVVideoAverageBitRateKey)
+      compressionProps[kVTCompressionPropertyKey_Quality as String] = min(max(quality, 0), 1)
+    }
+
     if keyframeInterval > 0 {
-      compressionProps[AVVideoMaxkeyframeIntervalDurationKey] = keyframeInterval
+      compressionProps[AVVideoMaxKeyFrameIntervalDurationKey] = keyframeInterval
     }
 
     // Rate control. AVAssetWriter has no true CBR switch, so CBR is approximated by
     // capping the data rate at the target over a 1-second window. VBR may take an
     // optional peak cap (bitrateMax).
-    let rateCap = bitrateMode == "cbr" ? outputBitrate : (bitrateMax > 0 ? max(bitrateMax, outputBitrate) : 0)
+    let rateCap = bitrateMode == "cbr"
+      ? outputBitrate
+      : (bitrateMax > 0 ? (bitrateMode == "cq" ? bitrateMax : max(bitrateMax, outputBitrate)) : 0)
     if rateCap > 0 {
       // [bytes, seconds]
       compressionProps[kVTCompressionPropertyKey_DataRateLimits as String] = [rateCap / 8, 1]

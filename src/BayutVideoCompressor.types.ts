@@ -21,11 +21,13 @@ export type CompressionSpeed = 'ultrafast' | 'fast' | 'balanced';
 /**
  * Rate control mode.
  * - 'vbr': Variable bitrate. `bitrate` is a target average; the encoder floats with content complexity.
+ * - 'cq': Constant quality (like ffmpeg `-crf`). `quality` sets the level and `bitrate` is ignored.
+ *   Falls back to VBR (using `bitrate`) if the encoder lacks support. Output size is content-dependent.
  * - 'cbr': Constant bitrate. Android requests BITRATE_MODE_CBR (falls back to VBR if the encoder
  *   lacks support). iOS has no guaranteed CBR through AVAssetWriter, so it uses the average bitrate
  *   plus a tight 1-second data-rate cap as the closest approximation.
  */
-export type BitrateMode = 'vbr' | 'cbr';
+export type BitrateMode = 'vbr' | 'cbr' | 'cq';
 
 /**
  * Audio codec for the output. MP4 output only supports AAC re-encoding or stream copy.
@@ -45,27 +47,42 @@ export type CompressOptions = CompressOptionsBase &
         bitrateMode?: 'vbr';
 
         /**
-         * Peak bitrate cap in bits per second. VBR only.
+         * Peak bitrate cap in bits per second.
          * - iOS: applied via `kVTCompressionPropertyKey_DataRateLimits` (1-second window); enforced.
          * - Android: passed as the `max-bitrate` MediaFormat key; only honored by some encoders.
          * Default: no cap.
          * Example: 2_500_000 for 2.5 Mbps
          */
         bitrateMax?: number;
+        quality?: never;
+      }
+    | {
+        bitrateMode: 'cq';
+
+        /**
+         * Peak bitrate cap in bits per second.
+         * - iOS: applied via `kVTCompressionPropertyKey_DataRateLimits` (1-second window); enforced.
+         * - Android: passed as the `max-bitrate` MediaFormat key; only honored by some encoders.
+         * Default: no cap.
+         * Example: 2_500_000 for 2.5 Mbps
+         */
+        bitrateMax?: number;
+
+        /**
+         * Quality from 0 (smallest) to 1 (best). Default: 0.5.
+         * - iOS: `kVTCompressionPropertyKey_Quality`.
+         * - Android: encoder `quality` key (0-100) in BITRATE_MODE_CQ.
+         */
+        quality?: number;
       }
     | {
         bitrateMode: 'cbr';
         bitrateMax?: never;
+        quality?: never;
       }
   );
 
 export interface CompressOptionsBase {
-  /**
-   * Target bitrate in bits per second.
-   * Default: auto-calculated based on resolution.
-   * Example: 2_500_000 for 2.5 Mbps
-   */
-  bitrate?: number;
 
   /**
    * Maximum keyframe (I-frame) interval in seconds.
