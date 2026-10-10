@@ -28,6 +28,11 @@ export type CompressionSpeed = 'ultrafast' | 'fast' | 'balanced';
 export type BitrateMode = 'vbr' | 'cbr';
 
 /**
+ * Audio codec for the output. MP4 output only supports AAC re-encoding or stream copy.
+ */
+export type AudioCodec = 'aac' | 'copy';
+
+/**
  * Options for video compression.
  */
 export type CompressOptions = CompressOptionsBase &
@@ -68,6 +73,20 @@ export interface CompressOptionsBase {
    * Default: 1 on Android, encoder default on iOS.
    */
   keyframeInterval?: number;
+
+  /**
+   * Audio codec.
+   * - 'aac': Re-encode to AAC-LC (uses `audioBitrate`, default 128 kbps).
+   * - 'copy': Keep the original audio stream untouched (`audioBitrate` is ignored).
+   * Default: iOS 'aac'; Android 'copy' unless `audioBitrate` is set, then 'aac'.
+   */
+  audioCodec?: AudioCodec;
+
+  /**
+   * Audio bitrate in bits per second for AAC output. Ignored with `audioCodec: 'copy'`.
+   * Default: 128_000
+   */
+  audioBitrate?: number;
 
   /**
    * Maximum output dimension (width or height).

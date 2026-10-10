@@ -26,6 +26,8 @@ public class BayutVideoCompressorModule: Module {
       let codec = options["codec"] as? String ?? "h264"
       let speed = options["speed"] as? String ?? "ultrafast"
       let keyframeInterval = (options["keyframeInterval"] as? NSNumber)?.doubleValue ?? 0
+      let audioCodec = options["audioCodec"] as? String
+      let audioBitrate = options["audioBitrate"] as? Int ?? 0
       let bitrateMode = options["bitrateMode"] as? String ?? "vbr"
       let bitrateMax = options["bitrateMax"] as? Int ?? 0
       let minimumFileSize = options["minimumFileSizeForCompress"] as? Double ?? 0
@@ -301,32 +303,47 @@ public class BayutVideoCompressorModule: Module {
     writer.shouldOptimizeForNetworkUse = true
     writer.add(writerInput)
 
-    // Audio: decompress to PCM then re-encode to AAC
+    // Audio: re-encode to AAC (default, 128 kbps) or pass the compressed samples through ('copy')
     var audioReaderOutput: AVAssetReaderTrackOutput?
     var audioWriterInput: AVAssetWriterInput?
 
     if let audioTrack = asset.tracks(withMediaType: .audio).first {
-      // Read as decompressed Linear PCM so writer can re-encode to AAC
-      let audioDecompressSettings: [String: Any] = [
-        AVFormatIDKey: kAudioFormatLinearPCM,
-        AVLinearPCMIsBigEndianKey: false,
-        AVLinearPCMIsFloatKey: false,
-        AVLinearPCMBitDepthKey: 16,
-        AVLinearPCMIsNonInterleaved: false,
-      ]
-      let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: audioDecompressSettings)
-      audioOutput.alwaysCopiesSampleData = false
-      reader.add(audioOutput)
-      audioReaderOutput = audioOutput
+      if audioCodec == "copy" {
+        let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)
+        audioOutput.alwaysCopiesSampleData = false
+        reader.add(audioOutput)
+        audioReaderOutput = audioOutput
 
-      let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: [
-        AVFormatIDKey: kAudioFormatMPEG4AAC,
-        AVEncoderBitRateKey: 128000,
-        AVNumberOfChannelsKey: 2,
-        AVSampleRateKey: 44100.0,
-      ])
-      writer.add(audioInput)
-      audioWriterInput = audioInput
+        let audioInput = AVAssetWriterInput(
+          mediaType: .audio,
+          outputSettings: nil,
+          sourceFormatHint: (audioTrack.formatDescriptions.first).map { $0 as! CMFormatDescription }
+        )
+        writer.add(audioInput)
+        audioWriterInput = audioInput
+      } else {
+        // Read as decompressed Linear PCM so writer can re-encode to AAC
+        let audioDecompressSettings: [String: Any] = [
+          AVFormatIDKey: kAudioFormatLinearPCM,
+          AVLinearPCMIsBigEndianKey: false,
+          AVLinearPCMIsFloatKey: false,
+          AVLinearPCMBitDepthKey: 16,
+          AVLinearPCMIsNonInterleaved: false,
+        ]
+        let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: audioDecompressSettings)
+        audioOutput.alwaysCopiesSampleData = false
+        reader.add(audioOutput)
+        audioReaderOutput = audioOutput
+
+        let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+          AVFormatIDKey: kAudioFormatMPEG4AAC,
+          AVEncoderBitRateKey: audioBitrate > 0 ? audioBitrate : 128000,
+          AVNumberOfChannelsKey: 2,
+          AVSampleRateKey: 44100.0,
+        ])
+        writer.add(audioInput)
+        audioWriterInput = audioInput
+      }
     }
 
     // Start processing

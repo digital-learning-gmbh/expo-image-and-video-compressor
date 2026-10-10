@@ -34,6 +34,8 @@ class BayutVideoCompressorModule : Module() {
                     codec = options["codec"] as? String ?: "h264",
                     speed = options["speed"] as? String ?: "ultrafast",
                     keyframeInterval = (options["keyframeInterval"] as? Number)?.toFloat() ?: 0f,
+                    audioCodec = options["audioCodec"] as? String,
+                    audioBitrate = (options["audioBitrate"] as? Number)?.toInt() ?: 0,
                     bitrateMode = options["bitrateMode"] as? String ?: "vbr",
                     bitrateMax = (options["bitrateMax"] as? Number)?.toInt() ?: 0,
                 )

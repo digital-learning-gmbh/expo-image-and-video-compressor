@@ -198,6 +198,8 @@ Compresses a video file using the device's hardware encoder.
 | `bitrateMode` | `'vbr' \| 'cbr'` | `'vbr'` | Rate control. Android: `BITRATE_MODE_CBR`/`VBR` (CBR falls back to VBR if the encoder lacks it). iOS: no true CBR in AVAssetWriter, so `'cbr'` is approximated with a 1-second data-rate cap equal to `bitrate`. |
 | `bitrateMax` | `number` | none | Peak cap in bps (like ffmpeg `-maxrate`). **VBR only** (a type error with `bitrateMode: 'cbr'`). iOS: enforced via `kVTCompressionPropertyKey_DataRateLimits`. Android: `max-bitrate` format key, only honored by some encoders. |
 | `keyframeInterval` | `number` | Android: `1`, iOS: encoder default | Max keyframe interval in seconds. Shorter = faster seeking, larger files. |
+| `audioCodec` | `'aac' \| 'copy'` | iOS `'aac'`; Android `'copy'` (or `'aac'` if `audioBitrate` is set) | `'aac'` re-encodes to AAC-LC; `'copy'` keeps the original audio stream. |
+| `audioBitrate` | `number` | `128000` | AAC bitrate in bps. Ignored with `'copy'`. |
 | `minimumFileSizeForCompress` | `number` | `0` | Skip compression if the source file is smaller than this value (in bytes). |
 | `getCancellationId` | `(id: string) => void` | — | Callback that receives a unique ID. Pass this ID to `cancel()` to abort compression. |
 | `progressDivider` | `number` | `0` | Throttle progress events. `0` = report every frame, `5` = report every 5%. |
