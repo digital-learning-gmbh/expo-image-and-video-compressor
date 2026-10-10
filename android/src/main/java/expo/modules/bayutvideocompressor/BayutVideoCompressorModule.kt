@@ -30,7 +30,7 @@ class BayutVideoCompressorModule : Module() {
 
                 val config = VideoCompressor.CompressConfig(
                     maxSize = (options["maxSize"] as? Number)?.toInt() ?: 1080,
-                    bitrate = (options["bitrate"] as? Number)?.toInt() ?: 0,
+                    bitrateTarget = (options["bitrateTarget"] as? Number)?.toInt() ?: 0,
                     codec = options["codec"] as? String ?: "h264",
                     speed = options["speed"] as? String ?: "ultrafast",
                     keyframeInterval = (options["keyframeInterval"] as? Number)?.toFloat() ?: 0f,

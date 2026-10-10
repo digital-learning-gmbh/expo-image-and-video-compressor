@@ -103,10 +103,11 @@ yarn add expo-image-and-video-compressor
 import { compress } from 'expo-image-and-video-compressor';
 
 const result = await compress(videoUri, {
-  bitrate: 2_500_000,   // 2.5 Mbps
-  maxSize: 1080,         // Scale down to 1080p
-  codec: 'h264',         // or 'hevc' for ~40% smaller output
-  speed: 'ultrafast',    // Fastest encoding
+  bitrateMode: 'vbr',
+  bitrateTarget: 2_500_000,   // 2.5 Mbps
+  maxSize: 1080,              // Scale down to 1080p
+  codec: 'h264',              // or 'hevc' for ~40% smaller output
+  speed: 'ultrafast',         // Fastest encoding
 }, (progress) => {
   console.log(`Compressing: ${Math.round(progress * 100)}%`);
 });
@@ -191,13 +192,13 @@ Compresses a video file using the device's hardware encoder.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `bitrate` | `number` | Auto | Target bitrate in bits per second. Auto-calculated from resolution when omitted. |
 | `maxSize` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. |
 | `codec` | `'h264' \| 'hevc'` | `'h264'` | Output video codec. HEVC produces ~40% smaller files but requires iOS 11+ / Android 5+. |
 | `speed` | `'ultrafast' \| 'fast' \| 'balanced'` | `'ultrafast'` | Encoding speed preset. Faster = larger file, slower = better compression ratio. |
-| `bitrateMode` | `'vbr' \| 'cbr' \| 'cq'` | `'vbr'` | Rate control. Android: `BITRATE_MODE_CBR`/`VBR` (CBR falls back to VBR if the encoder lacks it). iOS: no true CBR in AVAssetWriter, so `'cbr'` is approximated with a 1-second data-rate cap equal to `bitrate`. |
-| `quality` | `number` | `0.5` | 0–1. **CQ only** (like ffmpeg `-crf`; `bitrate` is ignored). iOS: `kVTCompressionPropertyKey_Quality`. Android: `BITRATE_MODE_CQ`, falling back to VBR if the encoder lacks it. Output size depends on content. |
+| `bitrateMode` | `'vbr' \| 'cbr' \| 'cq'` | `'vbr'` | Rate control. Android: `BITRATE_MODE_CBR`/`VBR` (CBR falls back to VBR if the encoder lacks it). iOS: no true CBR in AVAssetWriter, so `'cbr'` is approximated with a 1-second data-rate cap equal to `bitrateTarget`. |
+| `bitrateTarget` | `number` | Auto | Target bitrate in bits per second. Auto-calculated from resolution when omitted. |
 | `bitrateMax` | `number` | none | Peak cap in bps (like ffmpeg `-maxrate`). **VBR and CQ only** (a type error with `bitrateMode: 'cbr'`). iOS: enforced via `kVTCompressionPropertyKey_DataRateLimits`. Android: `max-bitrate` format key, only honored by some encoders. |
+| `quality` | `number` | `0.5` | 0–1. **CQ only** (like ffmpeg `-crf`; `bitrateTarget` is ignored). iOS: `kVTCompressionPropertyKey_Quality`. Android: `BITRATE_MODE_CQ`, falling back to VBR if the encoder lacks it. Output size depends on content. |
 | `keyframeInterval` | `number` | Android: `1`, iOS: encoder default | Max keyframe interval in seconds. Shorter = faster seeking, larger files. |
 | `audioCodec` | `'aac' \| 'copy'` | iOS `'aac'`; Android `'copy'` (or `'aac'` if `audioBitrate` is set) | `'aac'` re-encodes to AAC-LC; `'copy'` keeps the original audio stream. |
 | `audioBitrate` | `number` | `128000` | AAC bitrate in bps. Ignored with `'copy'`. |
@@ -318,7 +319,8 @@ async function prepareForUpload(uri: string, type: 'video' | 'image') {
     console.log(`Original: ${(meta.size / 1_000_000).toFixed(1)} MB`);
 
     const compressed = await compress(uri, {
-      bitrate: 2_500_000,
+      bitrateMode: 'vbr',
+      bitrateTarget: 2_500_000,
       maxSize: 720,
       codec: 'hevc',
     }, (p) => updateProgressBar(p));

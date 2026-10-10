@@ -22,7 +22,7 @@ public class BayutVideoCompressorModule: Module {
       // Emit it as part of progress events
 
       let maxSize = options["maxSize"] as? Int ?? 1080
-      let bitrate = options["bitrate"] as? Int ?? 0
+      let bitrateTarget = options["bitrateTarget"] as? Int ?? 0
       let codec = options["codec"] as? String ?? "h264"
       let speed = options["speed"] as? String ?? "ultrafast"
       let keyframeInterval = (options["keyframeInterval"] as? NSNumber)?.doubleValue ?? 0
@@ -65,8 +65,8 @@ public class BayutVideoCompressorModule: Module {
 
       // Calculate output bitrate
       let outputBitrate: Int
-      if bitrate > 0 {
-        outputBitrate = bitrate
+      if bitrateTarget > 0 {
+        outputBitrate = bitrateTarget
       } else {
         outputBitrate = self.calculateAutoBitrate(
           width: Int(outputWidth),

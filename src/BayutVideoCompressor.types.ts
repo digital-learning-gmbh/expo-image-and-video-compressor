@@ -83,7 +83,13 @@ export type CompressOptions = CompressOptionsBase &
   );
 
 export interface CompressOptionsBase {
-
+  /**
+   * Target bitrate in bits per second.
+   * Default: auto-calculated based on resolution.
+   * Example: 2_500_000 for 2.5 Mbps
+   */
+  bitrateTarget?: number;
+  
   /**
    * Maximum keyframe (I-frame) interval in seconds.
    * Shorter = faster seeking and error recovery, larger files; longer = better compression.

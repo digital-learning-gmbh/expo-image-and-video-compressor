@@ -25,7 +25,7 @@ class VideoCompressor(private val context: Context) {
 
     data class CompressConfig(
         val maxSize: Int = 1080,
-        val bitrate: Int = 0,
+        val bitrateTarget: Int = 0,
         val codec: String = "h264",
         val speed: String = "ultrafast",
         val keyframeInterval: Float = 0f,
@@ -63,8 +63,8 @@ class VideoCompressor(private val context: Context) {
 
         val (outputWidth, outputHeight) = calculateOutputSize(sourceWidth, sourceHeight, config.maxSize, rotation)
 
-        val outputBitrate = if (config.bitrate > 0) {
-            config.bitrate
+        val outputBitrate = if (config.bitrateTarget > 0) {
+            config.bitrateTarget
         } else {
             calculateAutoBitrate(outputWidth, outputHeight, sourceBitrate, config.speed)
         }
@@ -403,7 +403,7 @@ class VideoCompressor(private val context: Context) {
      * Decodes the first audio track and re-encodes it as AAC-LC into a standalone .m4a.
      * Returns false on any failure so the caller can fall back to pass-through.
      */
-    private fun transcodeAudioToAac(inputUri: Uri, outFile: File, bitrate: Int): Boolean {
+    private fun transcodeAudioToAac(inputUri: Uri, outFile: File, bitrateTarget: Int): Boolean {
         val ex = MediaExtractor()
         var pfd: android.os.ParcelFileDescriptor? = null
         var decoder: MediaCodec? = null
@@ -486,7 +486,7 @@ class VideoCompressor(private val context: Context) {
                         bytesPerSecond = sr.toLong() * ch * 2
                         val encFmt = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, sr, ch).apply {
                             setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-                            setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
+                            setInteger(MediaFormat.KEY_BIT_RATE, bitrateTarget)
                         }
                         encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC).also {
                             it.configure(encFmt, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
