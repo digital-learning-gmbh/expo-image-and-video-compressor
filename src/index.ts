@@ -36,7 +36,6 @@ export async function compressVideo(
 
     try {
         const opts: CompressOptions = {
-            videoMaxDimensionLongEdge: 1080,
             videoCodec: 'h264',
             speed: 'ultrafast',
             videoEncodingMode: 'vbr',

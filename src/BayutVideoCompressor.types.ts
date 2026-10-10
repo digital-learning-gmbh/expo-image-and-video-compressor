@@ -114,7 +114,7 @@ export interface CompressOptionsBase {
   /**
    * Maximum output dimension (width or height).
    * The video will be scaled proportionally.
-   * Given the input resolution `2420 × 1668` with `videoMaxDimensionLongEdge: 1080`, 
+   * Given the input resolution `2420 × 1668` with `videoMaxDimensionShortEdge: 1080`, 
    * the output resolution will be `1566 × 1080`
    */
   videoMaxDimensionShortEdge?: number;
@@ -122,7 +122,7 @@ export interface CompressOptionsBase {
   /**
    * Maximum output dimension (width or height).
    * The video will be scaled proportionally.
-   * Given a input resolution `2420 × 1668` with `videoMaxDimensionShortEdge: 1080`, 
+   * Given a input resolution `2420 × 1668` with `videoMaxDimensionLongEdge: 1080`, 
    * the output resolution will be `1080 × 744`.
    */
   videoMaxDimensionLongEdge?: number;

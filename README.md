@@ -192,8 +192,8 @@ Compresses a video file using the device's hardware encoder.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `videoMaxDimensionLongEdge` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. (e.g. given a input resolution `2420 × 1668` with `videoMaxDimensionLongEdge: 1080`, the output resolution will be `1566 × 1080`) |
-| `videoMaxDimensionShortEdge` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. (e.g. given a input resolution `2420 × 1668` with `videoMaxDimensionShortEdge: 1080`, the output resolution will be `1080 × 744`) |
+| `videoMaxDimensionShortEdge` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. (e.g. given a input resolution `2420 × 1668` with `videoMaxDimensionShortEdge: 1080`, the output resolution will be `1566 × 1080`) |
+| `videoMaxDimensionLongEdge` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. (e.g. given a input resolution `2420 × 1668` with `videoMaxDimensionLongEdge: 1080`, the output resolution will be `1080 × 744`) |
 | `videoCodec` | `'h264' \| 'hevc'` | `'h264'` | Output video videoCodec. HEVC produces ~40% smaller files but requires iOS 11+ / Android 5+. |
 | `speed` | `'ultrafast' \| 'fast' \| 'balanced'` | `'ultrafast'` | Encoding speed preset. Faster = larger file, slower = better compression ratio. |
 | `videoEncodingMode` | `'vbr' \| 'cbr' \| 'cq'` | `'vbr'` | Rate control. Android: `BITRATE_MODE_CBR`/`VBR` (CBR falls back to VBR if the encoder lacks it). iOS: no true CBR in AVAssetWriter, so `'cbr'` is approximated with a 1-second data-rate cap equal to `videoBitrateTarget`. |
