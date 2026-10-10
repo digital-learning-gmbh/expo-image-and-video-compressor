@@ -103,11 +103,11 @@ yarn add expo-image-and-video-compressor
 import { compressVideo } from 'expo-image-and-video-compressor';
 
 const result = await compressVideo(videoUri, {
-  videoEncodingMode: 'vbr',
+  videoEncodingMode: 'vbr',        // use Variable Bitrate Encoding
   videoBitrateTarget: 2_500_000,   // 2.5 Mbps
-  videoMaxDimension: 1080,              // Scale down to 1080p
+  videoMaxDimension: 1080,         // Scale down to 1080p
   videoCodec: 'h264',              // or 'hevc' for ~40% smaller output
-  speed: 'ultrafast',         // Fastest encoding
+  speed: 'ultrafast',              // Fastest encoding
 }, (progress) => {
   console.log(`Compressing: ${Math.round(progress * 100)}%`);
 });

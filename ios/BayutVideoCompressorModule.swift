@@ -23,14 +23,14 @@ public class BayutVideoCompressorModule: Module {
 
       let videoMaxDimension = options["videoMaxDimension"] as? Int ?? 1080
       let videoBitrateTarget = options["videoBitrateTarget"] as? Int ?? 0
-      let videoCodec = options["videoCodec"] as? String ?? "h264"
       let speed = options["speed"] as? String ?? "ultrafast"
+      let videoEncodingMode = options["videoEncodingMode"] as? String ?? "vbr"
+      let videoCodec = options["videoCodec"] as? String ?? "h264"
+      let videoQuality = (options["videoQuality"] as? NSNumber)?.doubleValue ?? 0.5
+      let videoBitrateMax = options["videoBitrateMax"] as? Int ?? 0
       let videoKeyframeInterval = (options["videoKeyframeInterval"] as? NSNumber)?.doubleValue ?? 0
       let audioCodec = options["audioCodec"] as? String
       let audioBitrate = options["audioBitrate"] as? Int ?? 0
-      let videoEncodingMode = options["videoEncodingMode"] as? String ?? "vbr"
-      let videoQuality = (options["videoQuality"] as? NSNumber)?.doubleValue ?? 0.5
-      let videoBitrateMax = options["videoBitrateMax"] as? Int ?? 0
       let minimumFileSize = options["minimumFileSizeForCompress"] as? Double ?? 0
       let progressDivider = options["progressDivider"] as? Int ?? 0
 
@@ -87,11 +87,14 @@ public class BayutVideoCompressorModule: Module {
         outputWidth: Int(outputWidth),
         outputHeight: Int(outputHeight),
         outputBitrate: outputBitrate,
-        codec: videoCodec,
         speed: speed,
         videoEncodingMode: videoEncodingMode,
-        quality: videoQuality,
+        videoCodec: videoCodec,
+        videoQuality: videoQuality,
         videoBitrateMax: videoBitrateMax,
+        videoKeyframeInterval: videoKeyframeInterval,
+        audioCodec: audioCodec,
+        audioBitrate: audioBitrate,
         uuid: uuid,
         progressDivider: progressDivider
       )
@@ -241,11 +244,14 @@ public class BayutVideoCompressorModule: Module {
     outputWidth: Int,
     outputHeight: Int,
     outputBitrate: Int,
-    codec: String,
     speed: String,
     videoEncodingMode: String,
-    quality: Double,
+    videoCodec: String,
+    videoQuality: Double,
     videoBitrateMax: Int,
+    videoKeyframeInterval: Double,
+    audioCodec: String?,
+    audioBitrate: Int,
     uuid: String,
     progressDivider: Int
   ) async throws {
@@ -259,8 +265,8 @@ public class BayutVideoCompressorModule: Module {
     reader.add(readerOutput)
 
     // Set up writer
-    let codecType: AVVideoCodecType = codec == "hevc" ? .hevc : .h264
-    let profileLevel: String = codec == "hevc"
+    let codecType: AVVideoCodecType = videoCodec == "hevc" ? .hevc : .h264
+    let profileLevel: String = videoCodec == "hevc"
       ? kVTProfileLevel_HEVC_Main_AutoLevel as String
       : kVTProfileLevel_H264_High_AutoLevel as String
 
@@ -273,7 +279,7 @@ public class BayutVideoCompressorModule: Module {
     // average-bitrate key is dropped (videoBitrateMax can still cap peaks below).
     if videoEncodingMode == "cq" {
       compressionProps.removeValue(forKey: AVVideoAverageBitRateKey)
-      compressionProps[kVTCompressionPropertyKey_Quality as String] = min(max(quality, 0), 1)
+      compressionProps[kVTCompressionPropertyKey_Quality as String] = min(max(videoQuality, 0), 1)
     }
 
     if videoKeyframeInterval > 0 {

@@ -26,14 +26,14 @@ class VideoCompressor(private val context: Context) {
     data class CompressConfig(
         val videoMaxDimension: Int = 1080,
         val videoBitrateTarget: Int = 0,
-        val videoCodec: String = "h264",
         val speed: String = "ultrafast",
+        val videoEncodingMode: String = "vbr",
+        val videoCodec: String = "h264",
+        val videoQuality: Float = 0.5f,
+        val videoBitrateMax: Int = 0,
         val videoKeyframeInterval: Float = 0f,
         val audioCodec: String? = null,
         val audioBitrate: Int = 0,
-        val videoEncodingMode: String = "vbr",
-        val videoQuality: Float = 0.5f,
-        val videoBitrateMax: Int = 0,
     )
 
     interface ProgressListener {
@@ -139,7 +139,7 @@ class VideoCompressor(private val context: Context) {
         Log.i(TAG, "Using encoder: ${encoder.name} (${if (isHardwareEncoder(encoder.name)) "HARDWARE" else "SOFTWARE"})")
 
         val encoderCaps = encoder.codecInfo.getCapabilitiesForType(mimeType).encoderCapabilities
-        fun supports(mode: Int) = encoderCaps.isBitrateModeSupported(mode)
+        fun supports(mode: Int) = encoderCaps?.isBitrateModeSupported(mode) == true
         val mode = when {
             config.videoEncodingMode == "cbr" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) ->
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR

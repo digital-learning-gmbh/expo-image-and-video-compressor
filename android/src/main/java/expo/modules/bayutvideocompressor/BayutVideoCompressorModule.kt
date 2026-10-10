@@ -31,14 +31,14 @@ class BayutVideoCompressorModule : Module() {
                 val config = VideoCompressor.CompressConfig(
                     videoMaxDimension = (options["videoMaxDimension"] as? Number)?.toInt() ?: 1080,
                     videoBitrateTarget = (options["videoBitrateTarget"] as? Number)?.toInt() ?: 0,
-                    videoCodec = options["videoCodec"] as? String ?: "h264",
                     speed = options["speed"] as? String ?: "ultrafast",
+                    videoEncodingMode = options["videoEncodingMode"] as? String ?: "vbr",
+                    videoCodec = options["videoCodec"] as? String ?: "h264",
+                    videoQuality = (options["videoQuality"] as? Number)?.toFloat() ?: 0.5f,
+                    videoBitrateMax = (options["videoBitrateMax"] as? Number)?.toInt() ?: 0,
                     videoKeyframeInterval = (options["videoKeyframeInterval"] as? Number)?.toFloat() ?: 0f,
                     audioCodec = options["audioCodec"] as? String,
                     audioBitrate = (options["audioBitrate"] as? Number)?.toInt() ?: 0,
-                    videoEncodingMode = options["videoEncodingMode"] as? String ?: "vbr",
-                    videoQuality = (options["videoQuality"] as? Number)?.toFloat() ?: 0.5f,
-                    videoBitrateMax = (options["videoBitrateMax"] as? Number)?.toInt() ?: 0,
                 )
 
                 val minimumFileSize = (options["minimumFileSizeForCompress"] as? Number)?.toDouble() ?: 0.0
@@ -93,7 +93,7 @@ class BayutVideoCompressorModule : Module() {
             val config = ImageCompressor.ImageCompressConfig(
                 maxWidth = (options["maxWidth"] as? Number)?.toInt() ?: 1280,
                 maxHeight = (options["maxHeight"] as? Number)?.toInt() ?: 1280,
-                videoQuality = (options["videoQuality"] as? Number)?.toFloat() ?: 0.8f,
+                quality = (options["quality"] as? Number)?.toFloat() ?: 0.8f,
                 output = options["output"] as? String ?: "jpg",
                 input = options["input"] as? String ?: "uri",
             )
