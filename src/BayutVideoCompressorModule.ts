@@ -6,7 +6,7 @@ declare class BayutVideoCompressorModule extends NativeModule<BayutVideoCompress
   /**
    * Compress a video file with hardware acceleration.
    * @param fileUrl - File URI of the video to compress
-   * @param options - Compression options (bitrate, videoMaxDimension, codec, speed)
+   * @param options - Compression options
    * @returns Promise resolving to the compressed file URI
    */
   video_compress(fileUrl: string, options: CompressOptions): Promise<string>;

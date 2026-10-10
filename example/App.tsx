@@ -109,7 +109,7 @@ export default function App() {
     setError(null);
 
     const options: CompressOptions = {
-      videoMaxDimension: selectedMaxSize,
+      videoMaxDimensionLongEdge: selectedMaxSize,
       videoCodec: selectedCodec,
       speed: selectedSpeed,
       getCancellationId: (id) => {

@@ -1,4 +1,4 @@
-import { type NativeEventSubscription } from 'react-native';
+import { type EventSubscription } from 'react-native';
 import BayutVideoCompressorModule from './BayutVideoCompressorModule';
 import type { CompressOptions, CompressionProgressPayload, ImageCompressOptions } from './BayutVideoCompressor.types';
 
@@ -18,7 +18,7 @@ export * from './BayutVideoCompressor.types';
  *
  * const result = await compressVideo(videoUri, {
  *   bitrate: 2_500_000,
- *   videoMaxDimension: 1080,
+ *   videoMaxDimensionLongEdge: 1080,
  *   videoCodec: 'h264',
  *   speed: 'ultrafast',
  * }, (progress) => {
@@ -31,12 +31,12 @@ export async function compressVideo(
     options?: CompressOptions,
     onProgress?: (progress: number) => void,
 ): Promise<string> {
-    let subscription: NativeEventSubscription | undefined;
+    let subscription: EventSubscription | undefined;
     const uuid = options?.uuid || Math.random().toString(36).substring(7);
 
     try {
         const opts: CompressOptions = {
-            videoMaxDimension: 1080,
+            videoMaxDimensionLongEdge: 1080,
             videoCodec: 'h264',
             speed: 'ultrafast',
             videoEncodingMode: 'vbr',

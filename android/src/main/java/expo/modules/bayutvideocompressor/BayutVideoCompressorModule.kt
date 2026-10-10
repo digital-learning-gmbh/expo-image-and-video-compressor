@@ -19,7 +19,7 @@ class BayutVideoCompressorModule : Module() {
 
         // MARK: - Compress
 
-        AsyncFunction("compressVideo") { fileUrl: String, options: Map<String, Any?> ->
+        AsyncFunction("video_compress") { fileUrl: String, options: Map<String, Any?> ->
             val uuid = options["uuid"] as? String ?: java.util.UUID.randomUUID().toString()
             val cancelled = AtomicBoolean(false)
             activeCompressions[uuid] = cancelled
@@ -29,7 +29,8 @@ class BayutVideoCompressorModule : Module() {
                     ?: throw IllegalStateException("React context not available")
 
                 val config = VideoCompressor.CompressConfig(
-                    videoMaxDimension = (options["videoMaxDimension"] as? Number)?.toInt() ?: 1080,
+                    videoMaxDimensionLongEdge = (options["videoMaxDimensionLongEdge"] as? Number)?.toInt() ?: 0,
+                    videoMaxDimensionShortEdge = (options["videoMaxDimensionShortEdge"] as? Number)?.toInt() ?: 0,
                     videoBitrateTarget = (options["videoBitrateTarget"] as? Number)?.toInt() ?: 0,
                     speed = options["speed"] as? String ?: "ultrafast",
                     videoEncodingMode = options["videoEncodingMode"] as? String ?: "vbr",

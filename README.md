@@ -105,7 +105,7 @@ import { compressVideo } from 'expo-image-and-video-compressor';
 const result = await compressVideo(videoUri, {
   videoEncodingMode: 'vbr',        // use Variable Bitrate Encoding
   videoBitrateTarget: 2_500_000,   // 2.5 Mbps
-  videoMaxDimension: 1080,         // Scale down to 1080p
+  videoMaxDimensionLongEdge: 1080, // Scale down to 1080p
   videoCodec: 'h264',              // or 'hevc' for ~40% smaller output
   speed: 'ultrafast',              // Fastest encoding
 }, (progress) => {
@@ -192,7 +192,8 @@ Compresses a video file using the device's hardware encoder.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `videoMaxDimension` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. |
+| `videoMaxDimensionLongEdge` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. (e.g. given a input resolution `2420 × 1668` with `videoMaxDimensionLongEdge: 1080`, the output resolution will be `1566 × 1080`) |
+| `videoMaxDimensionShortEdge` | `number` | `1080` | Maximum output dimension (width or height) in pixels. Aspect ratio is preserved. (e.g. given a input resolution `2420 × 1668` with `videoMaxDimensionShortEdge: 1080`, the output resolution will be `1080 × 744`) |
 | `videoCodec` | `'h264' \| 'hevc'` | `'h264'` | Output video videoCodec. HEVC produces ~40% smaller files but requires iOS 11+ / Android 5+. |
 | `speed` | `'ultrafast' \| 'fast' \| 'balanced'` | `'ultrafast'` | Encoding speed preset. Faster = larger file, slower = better compression ratio. |
 | `videoEncodingMode` | `'vbr' \| 'cbr' \| 'cq'` | `'vbr'` | Rate control. Android: `BITRATE_MODE_CBR`/`VBR` (CBR falls back to VBR if the encoder lacks it). iOS: no true CBR in AVAssetWriter, so `'cbr'` is approximated with a 1-second data-rate cap equal to `videoBitrateTarget`. |
@@ -299,7 +300,7 @@ HEVC (H.265) produces approximately **40% smaller files** at the same visual qua
 ```ts
 const result = await compressVideo(videoUri, {
   videoCodec: 'hevc',
-  videoMaxDimension: 1080,
+  videoMaxDimensionLongEdge: 1080,
   speed: 'fast',
 });
 ```
@@ -321,7 +322,7 @@ async function prepareForUpload(uri: string, type: 'video' | 'image') {
     const compressed = await compressVideo(uri, {
       videoEncodingMode: 'vbr',
       videoBitrateTarget: 2_500_000,
-      videoMaxDimension: 720,
+      videoMaxDimensionLongEdge: 720,
       videoCodec: 'hevc',
     }, (p) => updateProgressBar(p));
 
@@ -357,7 +358,7 @@ const result = await compressVideo(videoUri, {
 | **H.264 & HEVC encoding** | Hardware-accelerated video encoding via platform APIs |
 | **Image compression** | JPEG and PNG compression with resize and quality control |
 | **Frame dropping** | Automatically drops frames for high-fps sources to reduce output size |
-| **Auto-scaling** | Respects aspect ratio — set `videoMaxDimension` and let the encoder handle the rest |
+| **Auto-scaling** | Respects aspect ratio — set `videoMaxDimensionLongEdge` / `videoMaxDimensionShortEdge` and let the encoder handle the rest |
 | **Orientation handling** | Correctly preserves portrait and landscape orientation for both images and video |
 | **EXIF preservation** | Copies metadata from source to compressed images |
 | **Audio pass-through** | Copies the audio track without re-encoding — no quality loss |

@@ -15,13 +15,14 @@ public class BayutVideoCompressorModule: Module {
 
     // MARK: - Compress
 
-    AsyncFunction("compressVideo") { (fileUrl: String, options: [String: Any]) -> String in
+    AsyncFunction("video_compress") { (fileUrl: String, options: [String: Any]) -> String in
       let uuid = options["uuid"] as? String ?? UUID().uuidString
 
       // Send UUID back via options callback (handled in JS layer)
       // Emit it as part of progress events
 
-      let videoMaxDimension = options["videoMaxDimension"] as? Int ?? 1080
+      let videoMaxDimensionLongEdge = options["videoMaxDimensionLongEdge"] as? Int ?? 0
+      let videoMaxDimensionShortEdge = options["videoMaxDimensionShortEdge"] as? Int ?? 0
       let videoBitrateTarget = options["videoBitrateTarget"] as? Int ?? 0
       let speed = options["speed"] as? String ?? "ultrafast"
       let videoEncodingMode = options["videoEncodingMode"] as? String ?? "vbr"
@@ -60,7 +61,8 @@ public class BayutVideoCompressorModule: Module {
       let (outputWidth, outputHeight) = self.calculateOutputSize(
         sourceWidth: sourceWidth,
         sourceHeight: sourceHeight,
-        videoMaxDimension: CGFloat(videoMaxDimension)
+        videoMaxDimensionLongEdge: CGFloat(videoMaxDimensionLongEdge),
+        videoMaxDimensionShortEdge: CGFloat(videoMaxDimensionShortEdge)
       )
 
       // Calculate output bitrate
@@ -485,14 +487,18 @@ public class BayutVideoCompressorModule: Module {
     return url
   }
 
-  private func calculateOutputSize(sourceWidth: CGFloat, sourceHeight: CGFloat, videoMaxDimension: CGFloat) -> (CGFloat, CGFloat) {
+  private func calculateOutputSize(sourceWidth: CGFloat, sourceHeight: CGFloat, videoMaxDimensionLongEdge: CGFloat, videoMaxDimensionShortEdge: CGFloat) -> (CGFloat, CGFloat) {
     let isPortrait = sourceHeight > sourceWidth
     let scale: CGFloat
 
+    if videoMaxDimensionLongEdge <= 0 && videoMaxDimensionShortEdge <= 0 {
+      return (sourceWidth, sourceHeight)
+    }
+
     if isPortrait {
-      scale = min(videoMaxDimension / sourceHeight, 1.0)
+      scale = min(videoMaxDimensionLongEdge / sourceHeight, videoMaxDimensionShortEdge / sourceWidth, 1.0)
     } else {
-      scale = min(videoMaxDimension / sourceWidth, 1.0)
+      scale = min(videoMaxDimensionLongEdge / sourceWidth, videoMaxDimensionShortEdge / sourceHeight, 1.0)
     }
 
     // Round to even numbers (required by video encoders)

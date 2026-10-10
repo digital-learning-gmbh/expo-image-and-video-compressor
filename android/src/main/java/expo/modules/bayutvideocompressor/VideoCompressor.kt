@@ -24,7 +24,8 @@ class VideoCompressor(private val context: Context) {
     }
 
     data class CompressConfig(
-        val videoMaxDimension: Int = 1080,
+        val videoMaxDimensionLongEdge: Int = 0,
+        val videoMaxDimensionShort: Int = 0,
         val videoBitrateTarget: Int = 0,
         val speed: String = "ultrafast",
         val videoEncodingMode: String = "vbr",
@@ -61,7 +62,7 @@ class VideoCompressor(private val context: Context) {
         val sourceBitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull() ?: 5_000_000
         retriever.release()
 
-        val (outputWidth, outputHeight) = calculateOutputSize(sourceWidth, sourceHeight, config.videoMaxDimension, rotation)
+        val (outputWidth, outputHeight) = calculateOutputSize(sourceWidth, sourceHeight, config.videoMaxDimensionLongEdge, config.videoMaxDimensionShortEdge, rotation)
 
         val outputBitrate = if (config.videoBitrateTarget > 0) {
             config.videoBitrateTarget
@@ -553,11 +554,15 @@ class VideoCompressor(private val context: Context) {
         return -1
     }
 
-    private fun calculateOutputSize(srcW: Int, srcH: Int, videoMaxDimension: Int, rotation: Int): Pair<Int, Int> {
+    private fun calculateOutputSize(srcW: Int, srcH: Int, videoMaxDimensionLongEdge: Int, videoMaxDimensionShortEdge: Int, rotation: Int): Pair<Int, Int> {
         val w = if (rotation == 90 || rotation == 270) srcH else srcW
         val h = if (rotation == 90 || rotation == 270) srcW else srcH
-        val scale = if (h > w) (videoMaxDimension.toFloat() / h).coerceAtMost(1f)
-                    else (videoMaxDimension.toFloat() / w).coerceAtMost(1f)
+
+        if (videoMaxDimensionLongEdge <= 0 && videoMaxDimensionShortEdge <= 0)
+            return Pair((w, h))
+
+        val scale = if (h > w) Math.min((videoMaxDimensionLongEdge.toFloat() / h), (videoMaxDimensionShortEdge.toFloat() / w)).coerceAtMost(1f)
+                    else Math.min((videoMaxDimensionLongEdge.toFloat() / w), (videoMaxDimensionShortEdge.toFloat() / h)).coerceAtMost(1f)
         return Pair((Math.round(w * scale / 2f) * 2), (Math.round(h * scale / 2f) * 2))
     }
 
