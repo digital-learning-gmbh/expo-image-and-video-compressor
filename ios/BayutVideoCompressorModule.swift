@@ -21,19 +21,19 @@ public class BayutVideoCompressorModule: Module {
       // Send UUID back via options callback (handled in JS layer)
       // Emit it as part of progress events
 
-      let videoMaxDimensionLongEdge = options["videoMaxDimensionLongEdge"] as? Int ?? 0
-      let videoMaxDimensionShortEdge = options["videoMaxDimensionShortEdge"] as? Int ?? 0
-      let videoBitrateTarget = options["videoBitrateTarget"] as? Int ?? 0
+      let videoMaxDimensionLongEdge = (options["videoMaxDimensionLongEdge"] as? NSNumber)?.intValue ?? 0
+      let videoMaxDimensionShortEdge = (options["videoMaxDimensionShortEdge"] as? NSNumber)?.intValue ?? 0
+      let videoBitrateTarget = (options["videoBitrateTarget"] as? NSNumber)?.intValue ?? 0
       let speed = options["speed"] as? String ?? "ultrafast"
       let videoEncodingMode = options["videoEncodingMode"] as? String ?? "vbr"
       let videoCodec = options["videoCodec"] as? String ?? "h264"
       let videoQuality = (options["videoQuality"] as? NSNumber)?.doubleValue ?? 0.5
-      let videoBitrateMax = options["videoBitrateMax"] as? Int ?? 0
+      let videoBitrateMax = (options["videoBitrateMax"] as? NSNumber)?.intValue ?? 0
       let videoKeyframeInterval = (options["videoKeyframeInterval"] as? NSNumber)?.doubleValue ?? 0
       let audioCodec = options["audioCodec"] as? String
-      let audioBitrate = options["audioBitrate"] as? Int ?? 0
-      let minimumFileSize = options["minimumFileSizeForCompress"] as? Double ?? 0
-      let progressDivider = options["progressDivider"] as? Int ?? 0
+      let audioBitrate = (options["audioBitrate"] as? NSNumber)?.intValue ?? 0
+      let minimumFileSize = (options["minimumFileSizeForCompress"] as? NSNumber)?.doubleValue ?? 0
+      let progressDivider = (options["progressDivider"] as? NSNumber)?.intValue ?? 0
 
       let inputURL = URL(string: fileUrl)!
       let resolvedURL = self.resolveFileURL(inputURL)
@@ -117,9 +117,9 @@ public class BayutVideoCompressorModule: Module {
     // MARK: - Image Compress
 
     AsyncFunction("image_compress") { (value: String, options: [String: Any]) -> String in
-      let maxWidth = options["maxWidth"] as? Int ?? 1280
-      let maxHeight = options["maxHeight"] as? Int ?? 1280
-      let quality = options["quality"] as? Double ?? 0.8
+      let maxWidth = (options["maxWidth"] as? NSNumber)?.intValue ?? 1280
+      let maxHeight = (options["maxHeight"] as? NSNumber)?.intValue ?? 1280
+      let quality = (options["quality"] as? NSNumber)?.doubleValue ?? 0.8
       let output = options["output"] as? String ?? "jpg"
       let input = options["input"] as? String ?? "uri"
 
@@ -488,18 +488,16 @@ public class BayutVideoCompressorModule: Module {
   }
 
   private func calculateOutputSize(sourceWidth: CGFloat, sourceHeight: CGFloat, videoMaxDimensionLongEdge: CGFloat, videoMaxDimensionShortEdge: CGFloat) -> (CGFloat, CGFloat) {
-    let isPortrait = sourceHeight > sourceWidth
-    let scale: CGFloat
-
     if videoMaxDimensionLongEdge <= 0 && videoMaxDimensionShortEdge <= 0 {
       return (sourceWidth, sourceHeight)
     }
 
-    if isPortrait {
-      scale = min(videoMaxDimensionLongEdge / sourceHeight, videoMaxDimensionShortEdge / sourceWidth, 1.0)
-    } else {
-      scale = min(videoMaxDimensionLongEdge / sourceWidth, videoMaxDimensionShortEdge / sourceHeight, 1.0)
-    }
+    // A limit <= 0 means "unset". Long edge caps max(w, h), short edge caps min(w, h).
+    let sourceLong = max(sourceWidth, sourceHeight)
+    let sourceShort = min(sourceWidth, sourceHeight)
+    var scale: CGFloat = 1.0
+    if videoMaxDimensionLongEdge > 0 { scale = min(scale, videoMaxDimensionLongEdge / sourceLong) }
+    if videoMaxDimensionShortEdge > 0 { scale = min(scale, videoMaxDimensionShortEdge / sourceShort) }
 
     // Round to even numbers (required by video encoders)
     let w = round(sourceWidth * scale / 2.0) * 2.0
