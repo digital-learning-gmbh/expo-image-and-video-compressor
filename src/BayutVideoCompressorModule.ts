@@ -1,6 +1,6 @@
 import { NativeModule, requireNativeModule } from 'expo';
 
-import { BayutVideoCompressorModuleEvents, CompressOptions, ImageCompressOptions, VideoMetadata } from './BayutVideoCompressor.types';
+import type { BayutVideoCompressorModuleEvents, CompressOptions, ImageCompressOptions, VideoMetadata } from './BayutVideoCompressor.types';
 
 declare class BayutVideoCompressorModule extends NativeModule<BayutVideoCompressorModuleEvents> {
   /**
