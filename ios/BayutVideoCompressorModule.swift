@@ -15,22 +15,22 @@ public class BayutVideoCompressorModule: Module {
 
     // MARK: - Compress
 
-    AsyncFunction("compress") { (fileUrl: String, options: [String: Any]) -> String in
+    AsyncFunction("compressVideo") { (fileUrl: String, options: [String: Any]) -> String in
       let uuid = options["uuid"] as? String ?? UUID().uuidString
 
       // Send UUID back via options callback (handled in JS layer)
       // Emit it as part of progress events
 
-      let maxSize = options["maxSize"] as? Int ?? 1080
-      let bitrateTarget = options["bitrateTarget"] as? Int ?? 0
-      let codec = options["codec"] as? String ?? "h264"
+      let videoMaxDimension = options["videoMaxDimension"] as? Int ?? 1080
+      let videoBitrateTarget = options["videoBitrateTarget"] as? Int ?? 0
+      let videoCodec = options["videoCodec"] as? String ?? "h264"
       let speed = options["speed"] as? String ?? "ultrafast"
-      let keyframeInterval = (options["keyframeInterval"] as? NSNumber)?.doubleValue ?? 0
+      let videoKeyframeInterval = (options["videoKeyframeInterval"] as? NSNumber)?.doubleValue ?? 0
       let audioCodec = options["audioCodec"] as? String
       let audioBitrate = options["audioBitrate"] as? Int ?? 0
-      let bitrateMode = options["bitrateMode"] as? String ?? "vbr"
-      let quality = (options["quality"] as? NSNumber)?.doubleValue ?? 0.5
-      let bitrateMax = options["bitrateMax"] as? Int ?? 0
+      let videoEncodingMode = options["videoEncodingMode"] as? String ?? "vbr"
+      let videoQuality = (options["videoQuality"] as? NSNumber)?.doubleValue ?? 0.5
+      let videoBitrateMax = options["videoBitrateMax"] as? Int ?? 0
       let minimumFileSize = options["minimumFileSizeForCompress"] as? Double ?? 0
       let progressDivider = options["progressDivider"] as? Int ?? 0
 
@@ -60,13 +60,13 @@ public class BayutVideoCompressorModule: Module {
       let (outputWidth, outputHeight) = self.calculateOutputSize(
         sourceWidth: sourceWidth,
         sourceHeight: sourceHeight,
-        maxSize: CGFloat(maxSize)
+        videoMaxDimension: CGFloat(videoMaxDimension)
       )
 
       // Calculate output bitrate
       let outputBitrate: Int
-      if bitrateTarget > 0 {
-        outputBitrate = bitrateTarget
+      if videoBitrateTarget > 0 {
+        outputBitrate = videoBitrateTarget
       } else {
         outputBitrate = self.calculateAutoBitrate(
           width: Int(outputWidth),
@@ -87,11 +87,11 @@ public class BayutVideoCompressorModule: Module {
         outputWidth: Int(outputWidth),
         outputHeight: Int(outputHeight),
         outputBitrate: outputBitrate,
-        codec: codec,
+        codec: videoCodec,
         speed: speed,
-        bitrateMode: bitrateMode,
-        quality: quality,
-        bitrateMax: bitrateMax,
+        videoEncodingMode: videoEncodingMode,
+        quality: videoQuality,
+        videoBitrateMax: videoBitrateMax,
         uuid: uuid,
         progressDivider: progressDivider
       )
@@ -243,9 +243,9 @@ public class BayutVideoCompressorModule: Module {
     outputBitrate: Int,
     codec: String,
     speed: String,
-    bitrateMode: String,
+    videoEncodingMode: String,
     quality: Double,
-    bitrateMax: Int,
+    videoBitrateMax: Int,
     uuid: String,
     progressDivider: Int
   ) async throws {
@@ -270,22 +270,22 @@ public class BayutVideoCompressorModule: Module {
     ]
 
     // Constant quality: VideoToolbox picks the bitrate for the requested quality, so the
-    // average-bitrate key is dropped (bitrateMax can still cap peaks below).
-    if bitrateMode == "cq" {
+    // average-bitrate key is dropped (videoBitrateMax can still cap peaks below).
+    if videoEncodingMode == "cq" {
       compressionProps.removeValue(forKey: AVVideoAverageBitRateKey)
       compressionProps[kVTCompressionPropertyKey_Quality as String] = min(max(quality, 0), 1)
     }
 
-    if keyframeInterval > 0 {
-      compressionProps[AVVideoMaxKeyFrameIntervalDurationKey] = keyframeInterval
+    if videoKeyframeInterval > 0 {
+      compressionProps[AVVideoMaxKeyFrameIntervalDurationKey] = videoKeyframeInterval
     }
 
     // Rate control. AVAssetWriter has no true CBR switch, so CBR is approximated by
     // capping the data rate at the target over a 1-second window. VBR may take an
-    // optional peak cap (bitrateMax).
-    let rateCap = bitrateMode == "cbr"
+    // optional peak cap (videoBitrateMax).
+    let rateCap = videoEncodingMode == "cbr"
       ? outputBitrate
-      : (bitrateMax > 0 ? (bitrateMode == "cq" ? bitrateMax : max(bitrateMax, outputBitrate)) : 0)
+      : (videoBitrateMax > 0 ? (videoEncodingMode == "cq" ? videoBitrateMax : max(videoBitrateMax, outputBitrate)) : 0)
     if rateCap > 0 {
       // [bytes, seconds]
       compressionProps[kVTCompressionPropertyKey_DataRateLimits as String] = [rateCap / 8, 1]
@@ -479,14 +479,14 @@ public class BayutVideoCompressorModule: Module {
     return url
   }
 
-  private func calculateOutputSize(sourceWidth: CGFloat, sourceHeight: CGFloat, maxSize: CGFloat) -> (CGFloat, CGFloat) {
+  private func calculateOutputSize(sourceWidth: CGFloat, sourceHeight: CGFloat, videoMaxDimension: CGFloat) -> (CGFloat, CGFloat) {
     let isPortrait = sourceHeight > sourceWidth
     let scale: CGFloat
 
     if isPortrait {
-      scale = min(maxSize / sourceHeight, 1.0)
+      scale = min(videoMaxDimension / sourceHeight, 1.0)
     } else {
-      scale = min(maxSize / sourceWidth, 1.0)
+      scale = min(videoMaxDimension / sourceWidth, 1.0)
     }
 
     // Round to even numbers (required by video encoders)
@@ -511,9 +511,9 @@ public class BayutVideoCompressorModule: Module {
 
     let baseBitrate = Float(pixels) * 1.5
     let targetBitrate = Int(baseBitrate * compressFactor)
-    let bitrateMax = 5_000_000
+    let videoBitrateMax = 5_000_000
 
-    return min(max(targetBitrate, 500_000), min(sourceBitrate, bitrateMax))
+    return min(max(targetBitrate, 500_000), min(sourceBitrate, videoBitrateMax))
   }
 
   private func createTempURL() -> URL {

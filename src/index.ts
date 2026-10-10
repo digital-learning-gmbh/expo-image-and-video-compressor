@@ -14,19 +14,19 @@ export * from './BayutVideoCompressor.types';
  *
  * @example
  * ```ts
- * import { compress } from 'expo-image-and-video-compressor';
+ * import { compressVideo } from 'expo-image-and-video-compressor';
  *
- * const result = await compress(videoUri, {
+ * const result = await compressVideo(videoUri, {
  *   bitrate: 2_500_000,
- *   maxSize: 1080,
- *   codec: 'h264',
+ *   videoMaxDimension: 1080,
+ *   videoCodec: 'h264',
  *   speed: 'ultrafast',
  * }, (progress) => {
  *   console.log(`${Math.round(progress * 100)}%`);
  * });
  * ```
  */
-export async function compress(
+export async function compressVideo(
     fileUrl: string,
     options?: CompressOptions,
     onProgress?: (progress: number) => void,
@@ -36,10 +36,10 @@ export async function compress(
 
     try {
         const opts: CompressOptions = {
-            maxSize: 1080,
-            codec: 'h264',
+            videoMaxDimension: 1080,
+            videoCodec: 'h264',
             speed: 'ultrafast',
-            bitrateMode: 'vbr',
+            videoEncodingMode: 'vbr',
             minimumFileSizeForCompress: 0,
             progressDivider: 0,
             ...options,
@@ -61,7 +61,7 @@ export async function compress(
             opts.getCancellationId(uuid);
         }
 
-        const result = await BayutVideoCompressorModule.compress(fileUrl, opts);
+        const result = await BayutVideoCompressorModule.video_compress(fileUrl, opts);
         return result;
     } finally {
         subscription?.remove();

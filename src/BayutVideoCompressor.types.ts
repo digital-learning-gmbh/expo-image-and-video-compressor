@@ -21,7 +21,7 @@ export type CompressionSpeed = 'ultrafast' | 'fast' | 'balanced';
 /**
  * Rate control mode.
  * - 'vbr': Variable bitrate. `bitrate` is a target average; the encoder floats with content complexity.
- * - 'cq': Constant quality (like ffmpeg `-crf`). `quality` sets the level and `bitrate` is ignored.
+ * - 'cq': Constant quality (like ffmpeg `-crf`). `videoQuality` sets the level and `bitrate` is ignored.
  *   Falls back to VBR (using `bitrate`) if the encoder lacks support. Output size is content-dependent.
  * - 'cbr': Constant bitrate. Android requests BITRATE_MODE_CBR (falls back to VBR if the encoder
  *   lacks support). iOS has no guaranteed CBR through AVAssetWriter, so it uses the average bitrate
@@ -44,7 +44,7 @@ export type CompressOptions = CompressOptionsBase &
          * Rate control mode.
          * Default: 'vbr'
          */
-        bitrateMode?: 'vbr';
+        videoEncodingMode?: 'vbr';
 
         /**
          * Peak bitrate cap in bits per second.
@@ -53,11 +53,11 @@ export type CompressOptions = CompressOptionsBase &
          * Default: no cap.
          * Example: 2_500_000 for 2.5 Mbps
          */
-        bitrateMax?: number;
-        quality?: never;
+        videoBitrateMax?: number;
+        videoQuality?: never;
       }
     | {
-        bitrateMode: 'cq';
+        videoEncodingMode: 'cq';
 
         /**
          * Peak bitrate cap in bits per second.
@@ -66,19 +66,19 @@ export type CompressOptions = CompressOptionsBase &
          * Default: no cap.
          * Example: 2_500_000 for 2.5 Mbps
          */
-        bitrateMax?: number;
+        videoBitrateMax?: number;
 
         /**
          * Quality from 0 (smallest) to 1 (best). Default: 0.5.
          * - iOS: `kVTCompressionPropertyKey_Quality`.
          * - Android: encoder `quality` key (0-100) in BITRATE_MODE_CQ.
          */
-        quality?: number;
+        videoQuality?: number;
       }
     | {
-        bitrateMode: 'cbr';
-        bitrateMax?: never;
-        quality?: never;
+        videoEncodingMode: 'cbr';
+        videoBitrateMax?: never;
+        videoQuality?: never;
       }
   );
 
@@ -88,14 +88,14 @@ export interface CompressOptionsBase {
    * Default: auto-calculated based on resolution.
    * Example: 2_500_000 for 2.5 Mbps
    */
-  bitrateTarget?: number;
+  videoBitrateTarget?: number;
   
   /**
    * Maximum keyframe (I-frame) interval in seconds.
    * Shorter = faster seeking and error recovery, larger files; longer = better compression.
    * Default: 1 on Android, encoder default on iOS.
    */
-  keyframeInterval?: number;
+  videoKeyframeInterval?: number;
 
   /**
    * Audio codec.
@@ -116,13 +116,13 @@ export interface CompressOptionsBase {
    * The video will be scaled proportionally.
    * Default: 1080
    */
-  maxSize?: number;
+  videoMaxDimension?: number;
 
   /**
    * Video codec to use.
    * Default: 'h264'
    */
-  codec?: CompressionCodec;
+  videoCodec?: CompressionCodec;
 
   /**
    * Compression speed preset.

@@ -24,16 +24,16 @@ class VideoCompressor(private val context: Context) {
     }
 
     data class CompressConfig(
-        val maxSize: Int = 1080,
-        val bitrateTarget: Int = 0,
-        val codec: String = "h264",
+        val videoMaxDimension: Int = 1080,
+        val videoBitrateTarget: Int = 0,
+        val videoCodec: String = "h264",
         val speed: String = "ultrafast",
-        val keyframeInterval: Float = 0f,
+        val videoKeyframeInterval: Float = 0f,
         val audioCodec: String? = null,
         val audioBitrate: Int = 0,
-        val bitrateMode: String = "vbr",
-        val quality: Float = 0.5f,
-        val bitrateMax: Int = 0,
+        val videoEncodingMode: String = "vbr",
+        val videoQuality: Float = 0.5f,
+        val videoBitrateMax: Int = 0,
     )
 
     interface ProgressListener {
@@ -61,15 +61,15 @@ class VideoCompressor(private val context: Context) {
         val sourceBitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull() ?: 5_000_000
         retriever.release()
 
-        val (outputWidth, outputHeight) = calculateOutputSize(sourceWidth, sourceHeight, config.maxSize, rotation)
+        val (outputWidth, outputHeight) = calculateOutputSize(sourceWidth, sourceHeight, config.videoMaxDimension, rotation)
 
-        val outputBitrate = if (config.bitrateTarget > 0) {
-            config.bitrateTarget
+        val outputBitrate = if (config.videoBitrateTarget > 0) {
+            config.videoBitrateTarget
         } else {
             calculateAutoBitrate(outputWidth, outputHeight, sourceBitrate, config.speed)
         }
 
-        val mimeType = when (config.codec) {
+        val mimeType = when (config.videoCodec) {
             "hevc" -> MediaFormat.MIMETYPE_VIDEO_HEVC
             else -> MediaFormat.MIMETYPE_VIDEO_AVC
         }
@@ -121,12 +121,12 @@ class VideoCompressor(private val context: Context) {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, outputBitrate)
             setInteger(MediaFormat.KEY_FRAME_RATE, 30)
-            if (config.keyframeInterval > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-                setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, config.keyframeInterval)
+            if (config.videoKeyframeInterval > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, config.videoKeyframeInterval)
             } else {
                 setInteger(
                     MediaFormat.KEY_I_FRAME_INTERVAL,
-                    if (config.keyframeInterval > 0f) Math.round(config.keyframeInterval).coerceAtLeast(1) else I_FRAME_INTERVAL
+                    if (config.videoKeyframeInterval > 0f) Math.round(config.videoKeyframeInterval).coerceAtLeast(1) else I_FRAME_INTERVAL
                 )
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -141,23 +141,23 @@ class VideoCompressor(private val context: Context) {
         val encoderCaps = encoder.codecInfo.getCapabilitiesForType(mimeType).encoderCapabilities
         fun supports(mode: Int) = encoderCaps.isBitrateModeSupported(mode)
         val mode = when {
-            config.bitrateMode == "cbr" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) ->
+            config.videoEncodingMode == "cbr" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) ->
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
-            config.bitrateMode == "cq" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ) ->
+            config.videoEncodingMode == "cq" && supports(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ) ->
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ
             else -> MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR
         }
-        if (config.bitrateMode != "vbr" && mode == MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR) {
-            Log.w(TAG, "${config.bitrateMode.uppercase()} not supported by ${encoder.name}, falling back to VBR")
+        if (config.videoEncodingMode != "vbr" && mode == MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR) {
+            Log.w(TAG, "${config.videoEncodingMode.uppercase()} not supported by ${encoder.name}, falling back to VBR")
         }
         outputFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, mode)
         if (mode == MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ) {
-            // "quality" is a 0-100 scale for CQ mode on most encoders (KEY_QUALITY, API 28+)
-            outputFormat.setInteger("quality", (config.quality.coerceIn(0f, 1f) * 100).toInt())
+            // "videoQuality" is a 0-100 scale for CQ mode on most encoders (KEY_QUALITY, API 28+)
+            outputFormat.setInteger("videoQuality", (config.videoQuality.coerceIn(0f, 1f) * 100).toInt())
         }
         // Peak cap is vendor-dependent; unsupported encoders ignore the key.
-        if (mode != MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR && config.bitrateMax > 0) {
-            outputFormat.setInteger("max-bitrate", maxOf(config.bitrateMax, outputBitrate))
+        if (mode != MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR && config.videoBitrateMax > 0) {
+            outputFormat.setInteger("max-bitrate", maxOf(config.videoBitrateMax, outputBitrate))
         }
         encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         val encoderInputSurface = encoder.createInputSurface()
@@ -403,7 +403,7 @@ class VideoCompressor(private val context: Context) {
      * Decodes the first audio track and re-encodes it as AAC-LC into a standalone .m4a.
      * Returns false on any failure so the caller can fall back to pass-through.
      */
-    private fun transcodeAudioToAac(inputUri: Uri, outFile: File, bitrateTarget: Int): Boolean {
+    private fun transcodeAudioToAac(inputUri: Uri, outFile: File, videoBitrateTarget: Int): Boolean {
         val ex = MediaExtractor()
         var pfd: android.os.ParcelFileDescriptor? = null
         var decoder: MediaCodec? = null
@@ -486,7 +486,7 @@ class VideoCompressor(private val context: Context) {
                         bytesPerSecond = sr.toLong() * ch * 2
                         val encFmt = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, sr, ch).apply {
                             setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-                            setInteger(MediaFormat.KEY_BIT_RATE, bitrateTarget)
+                            setInteger(MediaFormat.KEY_BIT_RATE, videoBitrateTarget)
                         }
                         encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC).also {
                             it.configure(encFmt, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
@@ -553,11 +553,11 @@ class VideoCompressor(private val context: Context) {
         return -1
     }
 
-    private fun calculateOutputSize(srcW: Int, srcH: Int, maxSize: Int, rotation: Int): Pair<Int, Int> {
+    private fun calculateOutputSize(srcW: Int, srcH: Int, videoMaxDimension: Int, rotation: Int): Pair<Int, Int> {
         val w = if (rotation == 90 || rotation == 270) srcH else srcW
         val h = if (rotation == 90 || rotation == 270) srcW else srcH
-        val scale = if (h > w) (maxSize.toFloat() / h).coerceAtMost(1f)
-                    else (maxSize.toFloat() / w).coerceAtMost(1f)
+        val scale = if (h > w) (videoMaxDimension.toFloat() / h).coerceAtMost(1f)
+                    else (videoMaxDimension.toFloat() / w).coerceAtMost(1f)
         return Pair((Math.round(w * scale / 2f) * 2), (Math.round(h * scale / 2f) * 2))
     }
 
